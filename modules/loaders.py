@@ -143,6 +143,9 @@ loaders_and_params = OrderedDict({
         'no_mmap',
         'mlock'
     ],
+    'Mamba-Ssm': [
+        
+    ]
 })
 
 loaders_samplers = {
@@ -416,6 +419,11 @@ loaders_samplers = {
         'repetition_penalty',
         'repetition_penalty_range',
     },
+    'Mamba-Ssm': [
+        'temperature',
+        'top_p',
+        'top_k',
+    ],
     'AutoAWQ': {
         'temperature',
         'temperature_last',

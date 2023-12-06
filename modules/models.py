@@ -68,6 +68,7 @@ def load_model(model_name, loader=None):
         'ExLlamav2': ExLlamav2_loader,
         'ExLlamav2_HF': ExLlamav2_HF_loader,
         'ctransformers': ctransformers_loader,
+        'Mamba-Ssm': MambaSsm_loader,
         'AutoAWQ': AutoAWQ_loader,
     }
 
@@ -302,6 +303,13 @@ def ctransformers_loader(model_name):
     model, tokenizer = ctrans.from_pretrained(model_file)
     return model, tokenizer
 
+def MambaSsm_loader(model_name):
+    from modules.mamba import MambaSsmModel
+    path = Path(f'{shared.args.model_dir}/{model_name}')
+
+    mamba = MambaSsmModel()
+    model, tokenizer = mamba.from_pretrained(path)
+    return model, tokenizer
 
 def AutoAWQ_loader(model_name):
     from awq import AutoAWQForCausalLM
