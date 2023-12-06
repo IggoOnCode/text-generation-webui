@@ -19,10 +19,8 @@ class MambaSsmModel:
     def from_pretrained(self, path_to_model):
         
         dtype = torch.float16
-        model = MambaLMHeadModel.from_pretrained(path_to_model,"cuda",dtype)
+        model = MambaLMHeadModel.from_pretrained(path_to_model, "cuda", dtype)
         tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
-
-        tokenizer.eos_token_id = None
 
         result = self()
         result.model = model
@@ -39,19 +37,28 @@ class MambaSsmModel:
         return self.tokenizer.decode(ids, decode_special_tokens=True)
 
     def get_logits(self, token_ids, **kwargs):
-        self.cache.current_seq_len = 0
-        if token_ids.shape[-1] > 1:
-            self.model.forward(token_ids[:, :-1], self.cache, input_mask=None, preprocess_only=True, loras=self.loras)
+        logger.debug("mamba: token_ids %s",token_ids)
+        output = self.model.generate(
+            input_ids=token_ids.cuda(),
+            max_length = 8,
+            cg=True,
+            return_dict_in_generate=True,
+            output_scores=True,
+            enable_timing=False,
+        )
+        logger.debug("mamba: output %s",output)
+        logger.debug("mamba: output.scores %s", output.scores)
+        scores = output.scores[0]
+        logger.debug("scores %s", scores)
+        logger.debug("scores[-1] %s", scores[-1])
+        logger.debug("scores[-1][-1] %s", scores[-1][-1])
 
-        return self.model.forward(token_ids[:, -1:], self.cache, input_mask=None, loras=self.loras, **kwargs).float().cpu()
+        raise NotImplementedError("logit results look wrong right now")
+        return scores
 
     def generate(self, prompt, state, callback=None):
-        # prompt = prompt if type(prompt) is str else prompt.decode()
         input_ids = self.encode(prompt)
-        initial_len = len(input_ids[0])
 
-        logger.debug("mamba: input_ids %s",input_ids)
-        # ctransformers uses -1 for random seed
         output = self.model.generate(
             input_ids=input_ids.cuda(),
             max_length=state['max_new_tokens'],
@@ -63,10 +70,8 @@ class MambaSsmModel:
             top_k=state['top_k'],
             top_p=state['top_p'],
         )
-        logger.debug("mamba: output %s",output)
-        logger.debug("mamba: output.sequences %s", output.sequences)
+        initial_len = len(input_ids[0])
         decoded = self.decode(output.sequences.cpu()[0][initial_len:])
-        logger.debug("mamba: decoded %s", decoded)
         callback(decoded)
         return decoded
 
