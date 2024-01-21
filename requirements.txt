@@ -11,6 +11,7 @@ mamba-ssm
 markdown
 numpy==1.26.*
 optimum==1.17.*
+packaging
 pandas
 peft==0.8.*
 Pillow>=9.5.0
