@@ -1,0 +1,8 @@
+{
+    "question,response,id": "### Human:\n%question%\n\n### AI response:\n%response%",
+    "system_prompt,question,response,id": "### System instructions:\n%system_prompt%\n\n### Human:\n%question%\n\n### AI response:\n%response%",
+    "question,id": "### Human:\n%question%\n\n### AI response:\n",
+    "system_prompt,question,id": "### System instructions:\n%system_prompt%\n\n### Human:\n%question%\n\n### AI response:\n",
+    "response,id": "### AI response:\n%response%",
+    "system_prompt,response,id": "### System instructions:\n%system_prompt%\n\n### AI response:\n%response%"
+}
