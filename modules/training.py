@@ -128,7 +128,7 @@ def create_ui():
                             ui.create_refresh_button(format, lambda: None, lambda: {'choices': utils.get_datasets('training/formats', 'json')}, 'refresh-button', interactive=not mu)
 
                         with gr.Row():
-                            dataset = gr.Dropdown(choices=utils.get_datasets('training/datasets', 'json'), value='None', label='Dataset', info='The dataset file to use for training.', elem_classes=['slim-dropdown'], interactive=not mu)
+                            dataset = gr.Dropdown(choices=utils.get_datasets('training/datasets', 'json'), value='None', label='Dataset', info='The dataset file to use for training or a path or Huggingface name.', allow_custom_value=True, elem_classes=['slim-dropdown'], interactive=not mu)
                             ui.create_refresh_button(dataset, lambda: None, lambda: {'choices': utils.get_datasets('training/datasets', 'json')}, 'refresh-button', interactive=not mu)
 
                         with gr.Row():
@@ -493,14 +493,20 @@ def do_train(trained_model_name: str, always_override: bool, q_proj_en: bool, v_
             return tokenize(prompt, add_eos_token)
 
         logger.info("Loading JSON datasets")
-        data = load_dataset("json", data_files=clean_path('training/datasets', f'{dataset}.json'))
-        train_data = data['train'].map(generate_and_tokenize_prompt, new_fingerprint='%030x' % random.randrange(16**30))
+
+        if os.path.isfile(clean_path('training/datasets', f'{dataset}.json')):
+            data = load_dataset("json", data_files=clean_path('training/datasets', f'{dataset}.json'))
+        elif os.path.isdir(clean_path('training/datasets', f'{dataset}')):
+            data = load_dataset(clean_path('training/datasets', f'{dataset}'))
+        else:
+            data = load_dataset(dataset)
+        train_data = data['train'].map(generate_and_tokenize_prompt, new_fingerprint='%030x' % random.randrange(16**30), num_proc=os.cpu_count() // 2)
 
         if eval_dataset == 'None':
             eval_data = None
         else:
             eval_data = load_dataset("json", data_files=clean_path('training/datasets', f'{eval_dataset}.json'))
-            eval_data = eval_data['train'].map(generate_and_tokenize_prompt, new_fingerprint='%030x' % random.randrange(16**30))
+            eval_data = eval_data['train'].map(generate_and_tokenize_prompt, new_fingerprint='%030x' % random.randrange(16**30), num_proc=os.cpu_count() // 2)
 
     # == We MUST reload model if it went through any previous training, even failed one ==
     if shared.model_dirty_from_training:
