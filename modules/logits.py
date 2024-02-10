@@ -15,7 +15,6 @@ def get_next_logits(prompt, state, use_samplers, previous, top_logits=25, return
 
     is_non_hf_exllamav2 = shared.model.__class__.__name__ == 'Exllamav2Model'
     is_non_hf_llamacpp = shared.model.__class__.__name__ == 'LlamaCppModel'
-    is_non_hf_mambassm = shared.model.__class__.__name__ == 'MambaSsmModel'
 
     if use_samplers:
         if any([is_non_hf_exllamav2, is_non_hf_llamacpp]):
@@ -41,9 +40,6 @@ def get_next_logits(prompt, state, use_samplers, previous, top_logits=25, return
         elif is_non_hf_llamacpp:
             tokens = shared.tokenizer.encode(prompt)
             scores = shared.model.get_logits(tokens)[-1][-1]
-        elif is_non_hf_mambassm:
-            tokens = shared.tokenizer.encode(prompt, return_tensors='pt').cuda()
-            scores = shared.model.get_logits(tokens)[-1]
         else:
             if is_torch_xpu_available():
                 tokens = shared.tokenizer.encode(prompt, return_tensors='pt').to("xpu:0")

@@ -39,7 +39,6 @@ from modules.evaluate import (
 )
 from modules.logging_colors import logger
 from modules.models import reload_model
-from modules.mamba import MambaSsmModel, MambaTrainer
 from modules.utils import natural_keys
 
 MODEL_CLASSES = {v[1]: v[0] for v in MODEL_FOR_CAUSAL_LM_MAPPING_NAMES.items()}
@@ -322,9 +321,7 @@ def do_train(trained_model_name: str, training_form: int, always_override: bool,
     actual_lr = float(learning_rate)
     model_type = type(shared.model).__name__
 
-    if model_type == 'MambaSsmModel':
-        model_id = 'mamba'
-    elif model_type in MODEL_CLASSES:
+    if model_type in MODEL_CLASSES:
         model_id = MODEL_CLASSES[model_type]
     else:
         model_id = "llama"
@@ -542,10 +539,7 @@ def do_train(trained_model_name: str, training_form: int, always_override: bool,
 
     logger.info("Preparing for training")
     if training_form == "full":
-        if model_type == 'MambaSsmModel':
-            trained_model = shared.model.model
-        else:
-            trained_model = shared.model
+        trained_model = shared.model
     elif training_form == "LoRA":
         config = LoraConfig(
             r=lora_rank,
@@ -657,24 +651,14 @@ def do_train(trained_model_name: str, training_form: int, always_override: bool,
         use_ipex=True if is_torch_xpu_available() and not shared.args.cpu else False
     )
 
-    if isinstance(shared.model, MambaSsmModel):
-        trainer = MambaTrainer(
-            model=trained_model,
-            train_dataset=train_data,
-            eval_dataset=eval_data,
-            args=training_arguments,
-            data_collator=transformers.DataCollatorForLanguageModeling(shared.tokenizer, mlm=False),
-            callbacks=list([Callbacks()])
-        )
-    else:
-        trainer = transformers.Trainer(
-            model=trained_model,
-            train_dataset=train_data,
-            eval_dataset=eval_data,
-            args=training_arguments,
-            data_collator=transformers.DataCollatorForLanguageModeling(shared.tokenizer, mlm=False),
-            callbacks=list([Callbacks()])
-        )
+    trainer = transformers.Trainer(
+        model=trained_model,
+        train_dataset=train_data,
+        eval_dataset=eval_data,
+        args=training_arguments,
+        data_collator=transformers.DataCollatorForLanguageModeling(shared.tokenizer, mlm=False),
+        callbacks=list([Callbacks()])
+    )
 
     if hasattr(trained_model.config, 'use_cache'):
         trained_model.config.use_cache = False
